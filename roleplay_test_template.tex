@@ -1,0 +1,223 @@
+% Role-Playing Test Template
+% Canonical simple prompt used throughout this study.
+% Compile with: xelatex roleplay_test_template.tex
+% The English boxes also compile under pdflatex if the multilingual appendix is removed.
+\documentclass[11pt]{article}
+
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\setmainfont{TeX Gyre Termes}
+\setsansfont{TeX Gyre Heros}
+\setmonofont{TeX Gyre Cursor}
+\IfFontExistsTF{Microsoft YaHei}{\setCJKmainfont{Microsoft YaHei}}{%
+  \IfFontExistsTF{Noto Sans CJK SC}{\setCJKmainfont{Noto Sans CJK SC}}{%
+    \setCJKmainfont{SimSun}}}
+\IfFontExistsTF{Noto Sans Khmer}{%
+  \newfontfamily\khmerfont{Noto Sans Khmer}%
+}{%
+  \newcommand{\khmerfont}{}%
+}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyvrb}
+\usepackage{caption}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue!50!black,
+  citecolor=black
+}
+
+\DefineVerbatimEnvironment{Prompt}{Verbatim}{%
+  frame=single,
+  framesep=2mm,
+  fontsize=\small,
+  baselinestretch=1.05,
+  xleftmargin=2mm,
+  commandchars=\\\{\}%
+}
+
+\newcommand{\slot}[1]{\texttt{\{#1\}}}
+\newcommand{\subj}{\textit{subject}}
+
+\title{Role-Playing Test Template}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We specify the role-playing test used in this study.
+The test is a paired multiple-choice evaluation.
+A \emph{base} prompt and a \emph{role-play} prompt share the question, the options, and the output constraint.
+They differ only in a single expert-persona sentence placed at the start of the role-play prompt.
+The subject name is read from the benchmark label and inserted into that sentence.
+Accuracy is the fraction of items whose extracted choice matches the gold label under greedy decoding.
+\end{abstract}
+
+\section{Test format}
+Each item is a four-way multiple-choice question drawn from a subject of MMLU or MMLU-Redux.
+The model receives one user message and must return a single choice.
+No few-shot examples, chain-of-thought instruction, or system prompt are added.
+The chat template of the evaluated model wraps this user message at inference time.
+
+Two prompts are built for every item.
+\begin{description}[leftmargin=1.6em,style=nextline]
+  \item[Base.] A task instruction, the question, the four options, and an output constraint.
+  \item[Role-play.] The same three blocks, preceded by one persona sentence:
+  ``You are an expert in the field of \slot{subject}.''
+\end{description}
+The comparison therefore isolates the effect of the persona prefix.
+Question text, option text, option order, and the required output format are held fixed.
+
+\subsection{Slots}
+\begin{itemize}[leftmargin=1.4em]
+  \item \slot{subject}: the benchmark subject id, with underscores replaced by spaces and each word capitalized.
+  Example: \texttt{college\_biology} becomes \texttt{College Biology}.
+  \item \slot{question}: the question stem, unchanged.
+  \item \slot{options}: four lines, one choice per line.
+  The canonical form labels them \texttt{A.}--\texttt{D.}.
+  The MMLU preliminary run labels them \texttt{0.}--\texttt{3.} instead; the rest of the template is unchanged.
+\end{itemize}
+
+\section{Canonical templates}
+\label{sec:templates}
+
+\subsection{Base prompt}
+\begin{Prompt}
+Answer the following multiple-choice question. Choose the correct option.
+
+Question: {question}
+
+Options:
+A. {choice_0}
+B. {choice_1}
+C. {choice_2}
+D. {choice_3}
+
+Please output only the letter of the correct answer (A, B, C, or D). Do not output any other text.
+\end{Prompt}
+
+\subsection{Role-play prompt}
+\begin{Prompt}
+You are an expert in the field of {subject}. Please answer the following question based on your professional knowledge.
+
+Question: {question}
+
+Options:
+A. {choice_0}
+B. {choice_1}
+C. {choice_2}
+D. {choice_3}
+
+Please output only the letter of the correct answer (A, B, C, or D). Do not output any other text.
+\end{Prompt}
+
+The role-play template has four blocks, in this order.
+\begin{enumerate}[leftmargin=1.4em]
+  \item \textbf{Persona.} One sentence that assigns an expert role in \slot{subject} and asks the model to use professional knowledge.
+  \item \textbf{Question.} The stem, introduced by \texttt{Question:}.
+  \item \textbf{Options.} Four labeled choices.
+  \item \textbf{Output constraint.} A request to emit only the letter of the correct answer.
+\end{enumerate}
+Block~1 is the only text that the base prompt does not contain.
+Blocks~2--4 are copied verbatim between the two conditions.
+
+\subsection{Instantiated example}
+For the subject \texttt{anatomy}, the role-play prompt is instantiated as follows.
+The question is illustrative.
+\begin{Prompt}
+You are an expert in the field of Anatomy. Please answer the following question based on your professional knowledge.
+
+Question: Which chamber of the heart pumps oxygenated blood into the aorta?
+
+Options:
+A. Right atrium
+B. Right ventricle
+C. Left atrium
+D. Left ventricle
+
+Please output only the letter of the correct answer (A, B, C, or D). Do not output any other text.
+\end{Prompt}
+The matched base prompt is identical after the first sentence is removed and replaced by
+``Answer the following multiple-choice question. Choose the correct option.''
+
+\section{Index-labeled variant}
+The MMLU preliminary study uses the same wording and the same persona sentence, with numeric labels and a numeric output constraint.
+\begin{Prompt}
+You are an expert in the field of {subject}. Please answer the following question based on your professional knowledge.
+
+Question: {question}
+
+Options:
+0. {choice_0}
+1. {choice_1}
+2. {choice_2}
+3. {choice_3}
+
+Please output only the number of the correct answer (0, 1, 2, or 3). Do not output any other text.
+\end{Prompt}
+All reported MMLU-Redux results and the hypothesis-verification runs use the letter form in Section~\ref{sec:templates}.
+
+\section{Multilingual persona}
+The same four-block layout is used in eight languages: English, Chinese, Japanese, Malay, German, French, Khmer, and Spanish.
+Only the surface strings change.
+\slot{subject}, \slot{question}, and the option contents are not translated; the subject string remains the English display name defined above.
+Table~\ref{tab:persona} lists the persona sentence, which replaces Block~1.
+The output constraint asks for a letter (\texttt{A}--\texttt{D}) in the letter setting and for an index (\texttt{0}--\texttt{3}) in the index setting.
+
+\begin{table}[t]
+  \centering
+  \caption{Persona sentence of the role-play prompt. \slot{subject} is the English display name of the benchmark subject.}
+  \label{tab:persona}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l X@{}}
+    \toprule
+    Language & Persona sentence \\
+    \midrule
+    English &
+      You are an expert in the field of \slot{subject}.
+      Please answer the following question based on your professional knowledge. \\
+    Chinese &
+      您是\slot{subject}领域的专家。请根据您的专业知识回答以下问题。 \\
+    Japanese &
+      あなたは\slot{subject}分野の専門家です。専門知識に基づいて次の質問に答えてください。 \\
+    Malay &
+      Anda seorang pakar dalam bidang \slot{subject}.
+      Sila jawab soalan berikut berdasarkan pengetahuan profesional anda. \\
+    German &
+      Sie sind ein Experte auf dem Gebiet \slot{subject}.
+      Bitte beantworten Sie die folgende Frage basierend auf Ihrem Fachwissen. \\
+    French &
+      Vous êtes un expert dans le domaine de \slot{subject}.
+      Veuillez répondre à la question suivante en fonction de vos connaissances professionnelles. \\
+    Khmer &
+      {\khmerfont អ្នកគឺជាអ្នកជំនាញក្នុងវិស័យ\ \slot{subject}។
+      សូមឆ្លើយសំណួរខាងក្រោមដោយផ្អែកលើចំណេះដឹងជំនាញរបស់អ្នក។} \\
+    Spanish &
+      Usted es un experto en el campo de \slot{subject}.
+      Por favor, responda la siguiente pregunta basándose en su conocimiento profesional. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Scoring}
+Decoding is greedy (\texttt{temperature} $= 0$).
+A response is correct when the choice extracted from it equals the gold label.
+Extraction searches the generated text, after any thinking span is removed, for a standalone choice token: a letter in $\{\mathrm{A},\mathrm{B},\mathrm{C},\mathrm{D}\}$ or an index in $\{0,1,2,3\}$, depending on the template variant.
+If no choice token is found, the item is counted as incorrect.
+Accuracy on a subject is the number of correct items divided by the number of items in that subject.
+The role-play effect on a subject is the difference
+\[
+  \Delta = \mathrm{Acc}_{\text{role-play}} - \mathrm{Acc}_{\text{base}}.
+\]
+
+\end{document}
